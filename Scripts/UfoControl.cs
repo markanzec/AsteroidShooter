@@ -9,31 +9,38 @@ public class UfoControl : MonoBehaviour
 	public Rigidbody2D rb;
 	private Transform transformShip;
 	public GameObject ufoBullet;
+	public GameManager gm;
 	public int bulletSpeed;
 	public int hitPoints;
 	public bool canShoot = true;
-	
 	private int timesHit;
+	public GameObject explosion;
+	[SerializeField] private AudioSource sfxCollision;
+	public AudioSource sfxUfoEngine;
+	public GameObject explosionShipBullet;
 	
-    // Start is called before the first frame update
     void Start()
     {
         rb = GetComponent<Rigidbody2D>();
 		transformShip = GameObject.FindWithTag("Player").transform;
+		gm = GameObject.FindWithTag("GameController").GetComponent<GameManager>();
 		InvokeRepeating("Shoot", 5.0f, 5.0f);
 		timesHit = 0;
+		sfxUfoEngine.Play();
     }
 
-    // Update is called once per frame
     void Update()
     {
-		transform.Rotate(Vector3.forward, 90.0f * Time.deltaTime);
 		if (timesHit >= hitPoints)
 		{
+			var explode = Instantiate(explosion, transform.position, transform.rotation);
+			Destroy(explode, 2.0f);
 			gameObject.SetActive(false);
 			canShoot = false;
+			sfxUfoEngine.Pause();
 			timesHit = 0;
             transform.position = new Vector2(Random.Range(-10.0f, 10.0f), 8.0f);
+			gm.SendMessage("UpdateScore", 500);
 		}		
     }
 	
@@ -56,6 +63,8 @@ public class UfoControl : MonoBehaviour
 	void OnCollisionEnter2D(Collision2D other)
 	{
 		timesHit += 2;
+		if (other.gameObject.tag == "Asteroid")
+			sfxCollision.Play();
 	}
 	
 	void OnTriggerEnter2D(Collider2D other)
@@ -64,6 +73,8 @@ public class UfoControl : MonoBehaviour
 		{
 			timesHit++;
 			Destroy(other.gameObject);
+			var bulletExplode = Instantiate(explosionShipBullet, other.transform.position, other.transform.rotation);
+			Destroy(bulletExplode, 2.0f);
 		}
 	}
 }
